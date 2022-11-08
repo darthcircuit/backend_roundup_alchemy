@@ -1,14 +1,15 @@
 from flask import jsonify, request, Blueprint
-from tables import payment_methods
 from tables.payment_methods import (
     PaymentMethods,
-    PaymentMethodsSchema,
-    payment_methods_schema,
 )
+from tables.schemas import (
+    payment_methods_schema,
+    payment_method_types_schema,
+    payment_method_schema,
+)
+
 from tables.payment_method_types import (
     PaymentMethodTypes,
-    PaymentMethodTypesSchema,
-    payment_method_types_schema,
 )
 from db import db
 
@@ -32,45 +33,45 @@ def pm_add():
     if not post_data:
         return jsonify("No data recieved"), 403
 
-    account_name = post_data.get("account_name")
-    payment_method_type = post_data.get("payment_method_type")
-    account_number = post_data.get("account_number")
-    account_owner_phone = post_data.get("account_owner_phone")
-    billing_street_address = post_data.get("billing_street_address")
-    billing_city = post_data.get("billing_city")
-    billing_state = post_data.get("billing_state")
-    billing_postal_code = post_data.get("billing_postal_code")
-    bank_name = post_data.get("bank_name")
+    required_fields = [
+        "account_name",
+        "payment_method_type",
+        "account_number",
+        "account_owner_phone",
+        "billing_street_address",
+        "billing_city",
+        "billing_state",
+        "billing_postal_code",
+        "bank_name",
+        "bank_routing_num",
+        "user_id",
+    ]
+    post_data = dict(post_data)
+    missing_fields = []
+    for field in required_fields:
+        if field not in post_data:
+            missing_fields.append(field)
 
-    if (
-        account_name
-        and payment_method_type
-        and account_number
-        and account_owner_phone
-        and billing_street_address
-        and billing_city
-        and billing_postal_code
-        and billing_state
-        and bank_name
-    ):
+    if missing_fields:
+        return jsonify(f"{missing_fields} not found"), 404
 
-        new_method = PaymentMethods(
-            account_name,
-            payment_method_type,
-            account_number,
-            account_owner_phone,
-            billing_street_address,
-            billing_city,
-            billing_state,
-            billing_postal_code,
-            bank_name,
-        )
-        db.session.add(new_method)
-        db.session.commit()
+    new_method = PaymentMethods(
+        post_data["account_name"],
+        post_data["payment_method_type"],
+        post_data["account_number"],
+        post_data["account_owner_phone"],
+        post_data["billing_street_address"],
+        post_data["billing_city"],
+        post_data["billing_state"],
+        post_data["billing_postal_code"],
+        post_data["bank_name"],
+        post_data["bank_routing_num"],
+        post_data["user_id"],
+    )
+    db.session.add(new_method)
+    db.session.commit()
 
-        return jsonify("Payment method added"), 201
-    else:
-        return jsonify("Missing critical information for creation"), 403
+    return jsonify(payment_method_schema.dump(new_method)), 201
 
 
 @pay.route("/payment_method_type/get/all", methods=["GET"])
@@ -102,6 +103,6 @@ def pmt_add():
         db.session.add(new_method_type)
         db.session.commit()
 
-        return jsonify("Added Payment method type"), 201
+        return jsonify(payment_method_schema.dump(new_method_type)), 201
     else:
         return jsonify("Missing critical information for creation"), 403

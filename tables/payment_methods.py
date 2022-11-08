@@ -2,8 +2,6 @@ from enum import unique
 import uuid
 from sqlalchemy.dialects.postgresql import UUID
 from db import db
-import marshmallow as ma
-from tables.payment_method_types import *
 
 # from organizations import Organizations, OrganizationsSchema
 
@@ -29,7 +27,8 @@ class PaymentMethods(db.Model):
     user_id = db.Column(
         UUID(as_uuid=True), db.ForeignKey("users.user_id"), nullable=False
     )
-    # pay_method = db.relationship("Contributions", back_populates="user_id")
+    method_type = db.relationship("PaymentMethodTypes", back_populates="method")
+    user = db.relationship("Users", back_populates="payment_methods")
 
     def __init__(
         self,
@@ -42,7 +41,9 @@ class PaymentMethods(db.Model):
         billing_state,
         billing_postal_code,
         bank_name,
-        active,
+        user_id,
+        bank_routing_num="n/a",
+        active=True,
     ):
         self.account_name = account_name
         self.payment_method_type = payment_method_type
@@ -53,29 +54,6 @@ class PaymentMethods(db.Model):
         self.billing_state = billing_state
         self.billing_postal_code = billing_postal_code
         self.bank_name = bank_name
+        self.user_id = user_id
+        self.bank_routing_num = bank_routing_num
         self.active = active
-
-
-class PaymentMethodsSchema(ma.Schema):
-    class Meta:
-        fields = [
-            "payment_method_id",
-            "account_name",
-            "payment_method",
-            "account_number",
-            "account_owner_phone",
-            "billing_street_address",
-            "billing_city",
-            "billing_state",
-            "billing_postal_code",
-            "bank_name",
-            "bank_routing_num",
-            "active",
-            "user_id",
-        ]
-
-    payment_method = ma.fields.Nested(PaymentMethodTypesSchema())
-
-
-payment_method_schema = PaymentMethodsSchema()
-payment_methods_schema = PaymentMethodsSchema(many=True)

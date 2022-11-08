@@ -2,7 +2,6 @@ from enum import unique
 import uuid
 from sqlalchemy.dialects.postgresql import UUID
 from db import db
-import marshmallow as ma
 
 # from organizations import Organizations, OrganizationsSchema
 
@@ -13,17 +12,8 @@ class PaymentMethodTypes(db.Model):
     method_name = db.Column(db.String(), nullable=False)
     method_description = db.Column(db.String(), nullable=False)
 
+    method = db.relationship("PaymentMethods", back_populates="method_type")
+
     def __init__(self, method_name, method_description):
         self.method_name = method_name
         self.method_description = method_description
-
-
-class PaymentMethodTypesSchema(ma.Schema):
-    class Meta:
-        fields = ["type_id", "method_name", "method_description"]
-
-    # organization = ma.fields.Nested(OrganizationsSchema())
-
-
-payment_method_type_schema = PaymentMethodTypesSchema()
-payment_method_types_schema = PaymentMethodTypesSchema(many=True)

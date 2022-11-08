@@ -1,5 +1,6 @@
 from flask import jsonify, request, Blueprint
-from tables.users import Users, user_schema, users_schema
+from tables.users import Users
+from tables.schemas import user_schema, users_schema
 from db import db, populate_object
 
 
@@ -41,7 +42,7 @@ def update_user_route(user_id):
 
     if updated_fields:
         db.session.commit()
-        return jsonify(f"{', '.join(updated_fields)} updated for User ID: {user_id}")
+        return jsonify(user_schema.dump(user_ojb))
 
     else:
         return jsonify(f"No Fields Updated")
@@ -54,7 +55,7 @@ def deactivate_user_route(user_id):
     if selected_user:
         selected_user.active = False
         db.session.commit()
-        return jsonify(f"User with ID {user_id} has been set to inactive."), 200
+        return jsonify(user_schema.dump(selected_user)), 200
     else:
         return "Invalid"
 
@@ -66,7 +67,7 @@ def activate_user_route(user_id):
     if selected_user:
         selected_user.active = True
         db.session.commit()
-        return jsonify(f"User with ID {user_id} has been set to active."), 200
+        return jsonify(user_schema.dump(selected_user)), 200
     else:
         return "Invalid"
 
@@ -78,51 +79,47 @@ def delete_user_route(user_id):
     db.session.delete(selected_user)
     db.session.commit()
 
-    return jsonify(f"User with ID {user_id} has been deleted")
+    return jsonify(user_schema.dump(selected_user))
 
 
 @users.route("/user/add", methods=["POST"])
 def user_add():
     post_data = request.form if request.form else request.json
-
+    required_fields = [
+        "first_name",
+        "last_name",
+        "email",
+        "phone",
+        "mailing_street_address",
+        "mailing_city",
+        "mailing_state",
+        "mailing_postal_code",
+        "social_security_num",
+    ]
     if not post_data:
         return jsonify("No data recieved"), 403
-    first_name = post_data.get("first_name")
-    last_name = post_data.get("last_name")
-    email = post_data.get("email")
-    phone = post_data.get("phone")
-    street_address = post_data.get("mailing_street_address")
-    city = post_data.get("mailing_city")
-    state = post_data.get("mailing_state")
-    postal_code = post_data.get("mailing_postal_code")
-    ssn = post_data.get("social_security_num")
 
-    if (
-        first_name
-        and last_name
-        and email
-        and phone
-        and street_address
-        and city
-        and state
-        and postal_code
-        and ssn
-    ):
+    post_data = dict(post_data)
+    missing_fields = []
+    for field in required_fields:
+        if field not in post_data:
+            missing_fields.append(field)
 
-        new_user = Users(
-            first_name,
-            last_name,
-            email,
-            phone,
-            street_address,
-            city,
-            state,
-            postal_code,
-            ssn,
-        )
-        db.session.add(new_user)
-        db.session.commit()
+    if missing_fields:
+        return jsonify(f"{missing_fields} not found"), 404
 
-        return jsonify("User created"), 201
-    else:
-        return jsonify("Missing critical information for user creation"), 403
+    new_user = Users(
+        post_data["first_name"],
+        post_data["last_name"],
+        post_data["email"],
+        post_data["phone"],
+        post_data["mailing_street_address"],
+        post_data["mailing_city"],
+        post_data["mailing_state"],
+        post_data["mailing_postal_code"],
+        post_data["social_security_num"],
+    )
+    db.session.add(new_user)
+    db.session.commit()
+
+    return jsonify(user_schema.dump(new_user)), 201

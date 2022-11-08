@@ -16,6 +16,7 @@ app.config[
 ] = "postgresql://johnipson@127.0.0.1:5432/doughnate"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
+print(app.config)
 init_db(app, db)
 
 

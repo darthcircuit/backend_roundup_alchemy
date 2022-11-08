@@ -1,6 +1,5 @@
 import uuid
 from sqlalchemy.dialects.postgresql import UUID
-from tables.contributions import ContributionsSchema
 from db import db
 import marshmallow as ma
 
@@ -19,9 +18,12 @@ class NonProfits(db.Model):
     #     UUID(as_uuid=True), db.ForeignKey("organizations.org_id"), nullable=False
     # )
     active = db.Column(db.Boolean(), default=True)
-    # contributions = db.relationship("Contributions", back_populates="np_id")
+    received_contributions = db.relationship("Contributions", back_populates="np")
+    # user = db.relationship(
+    #     "Contributions", secondary="Users", back_populates="supported_non_profs"
+    # )
 
-    def __init__(self, name, address, city, state, phone, tax_id, filing_class):
+    def __init__(self, name, address, city, state, phone, tax_id):
         self.name = name
         self.address = address
         self.city = city
@@ -30,25 +32,3 @@ class NonProfits(db.Model):
         self.tax_id = tax_id
         # self.filing_class = filing_class
         self.active = True
-
-
-class NonProfitsSchema(ma.Schema):
-    class Meta:
-        fields = [
-            "np_id",
-            "name",
-            "address",
-            "city",
-            "state",
-            "phone",
-            "tax_id",
-            # "filing_class",
-            "contributions",
-            "active",
-        ]
-
-    contributions = ma.fields.Nested(ContributionsSchema())
-
-
-np_schema = NonProfitsSchema()
-nps_schema = NonProfitsSchema(many=True)

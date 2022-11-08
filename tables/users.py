@@ -1,8 +1,6 @@
 import uuid
 from sqlalchemy.dialects.postgresql import UUID
 from db import db
-from tables.contributions import Contributions, ContributionsSchema
-import marshmallow as ma
 
 # from organizations import Organizations, OrganizationsSchema
 
@@ -24,7 +22,11 @@ class Users(db.Model):
     # )
     active = db.Column(db.Boolean(), nullable=False, default=True)
 
-    # contributions = db.relationship("Contributions", back_populates="user_id")
+    payment_methods = db.relationship("PaymentMethods", back_populates="user")
+    contributions = db.relationship("Contributions", back_populates="user")
+    # supported_non_profs = db.relationship(
+    #     "Contributions", secondary="NonProfits", back_populates="user"
+    # )
 
     def __init__(
         self,
@@ -48,27 +50,3 @@ class Users(db.Model):
         self.mailing_postal_code = mailing_postal_code
         self.social_security_num = social_security_num
         self.active = True
-
-
-class UsersSchema(ma.Schema):
-    class Meta:
-        fields = [
-            "user_id",
-            "first_name",
-            "last_name",
-            "email",
-            "phone",
-            "mailing_street_address",
-            "mailing_city",
-            "mailing_state",
-            "mailing_postal_code",
-            "social_security_num",
-            "contributions",
-            "active",
-        ]
-
-    contributions = ma.fields.Nested(ContributionsSchema())
-
-
-user_schema = UsersSchema()
-users_schema = UsersSchema(many=True)

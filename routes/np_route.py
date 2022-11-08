@@ -1,12 +1,13 @@
 from flask import jsonify, request, Blueprint
-from tables.non_prof import NonProfits, NonProfitsSchema, np_schema, nps_schema
+from tables.non_prof import NonProfits
 from db import db, populate_object
+from tables.schemas import np_schema, nps_schema
 
 
 np = Blueprint("np", __name__)
 
 
-@np.route("/np/get", methods=["GET"])
+@np.route("/np/get/all", methods=["GET"])
 def get_all_active_np_route():
     np = db.session.query(NonProfits).filter(NonProfits.active == True).all()
 
@@ -87,26 +88,27 @@ def np_add():
 
     if not post_data:
         return jsonify("No data recieved"), 403
-    name = post_data.get("name")
-    address = post_data.get("address")
-    city = post_data.get("city")
-    state = post_data.get("state")
-    phone = post_data.get("phone")
-    tax_id = post_data.get("tax_id")
 
-    if name and address and city and state and phone and tax_id:
+    required_fields = ["name", "address", "city", "state", "phone", "tax_id"]
+    post_data = dict(post_data)
+    missing_fields = []
+    for field in required_fields:
+        if field not in post_data:
+            missing_fields.append(field)
 
-        new_np = NonProfits(
-            name,
-            address,
-            city,
-            state,
-            phone,
-            tax_id,
-        )
-        db.session.add(new_np)
-        db.session.commit()
+    if missing_fields:
+        return jsonify(f"{missing_fields} not found"), 404
 
-        return jsonify("Non Profit Organization created"), 201
-    else:
-        return jsonify("Missing critical information for creation"), 403
+    new_np = NonProfits(
+        post_data["name"],
+        post_data["address"],
+        post_data["city"],
+        post_data["state"],
+        post_data["phone"],
+        post_data["tax_id"],
+    )
+
+    db.session.add(new_np)
+    db.session.commit()
+
+    return jsonify("Non Profit Organization created"), 201
